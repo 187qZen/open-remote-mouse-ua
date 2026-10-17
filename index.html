@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#101418">
+<link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/icon.svg">
+<title>PC Remote</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#101418;color:#e6edf3;font-family:system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+textarea,input{-webkit-user-select:text;user-select:text}
+button.b.lock{border-color:#3fb950;background:#12361f}
+.screen{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top)}
+header{padding:10px 14px;font-size:14px;color:#8b949e;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header .ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb{background:none;border:0;color:#58a6ff;font-size:16px;padding:6px 4px}
+main{flex:1;min-height:0;position:relative}
+.tab{display:none;height:100%;padding:10px}.tab.on{display:flex;flex-direction:column;gap:10px}
+nav{display:flex;background:#161b22;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:12px 0;background:none;border:0;color:#8b949e;font-size:12px}
+nav button.on{color:#3fb950}
+nav button span{display:block;font-size:22px}
+button.b{background:#21262d;border:1px solid #30363d;border-radius:14px;color:#e6edf3;font-size:22px;padding:18px}
+button.b:active{background:#30363d}
+#pad{flex:1;background:#161b22;border-radius:16px;touch-action:none;position:relative}
+#scroll{flex:none!important;width:44px;background:#21262d;border-radius:16px;touch-action:none}
+.row{display:flex;gap:10px}.row>*{flex:1}
+#wins{overflow:auto;display:flex;flex-direction:column;gap:8px}
+.w{background:#161b22;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px}
+.w.act{outline:2px solid #3fb950}.w .t{flex:1;min-width:0}
+.w img,.w .ph{width:36px;height:36px;border-radius:8px;flex:none;background:#21262d}
+.w .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.w .t i{font-style:normal;color:#8b949e;font-size:12px}
+.w button{background:none;border:0;color:#f85149;font-size:20px;padding:6px 10px}
+.sm{font-size:15px!important;padding:14px 4px!important}
+textarea{flex:1;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:14px;padding:14px;font-size:18px;resize:none}
+#devlist{flex:1;overflow:auto;padding:6px 14px;display:flex;flex-direction:column;gap:10px}
+.dev{background:#161b22;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px}
+.dev .dot{width:12px;height:12px;border-radius:50%;background:#6e7681;flex:none}
+.dev .dot.on{background:#3fb950}.dev .dot.pin{background:#d29922}.dev .dot.off{background:#f85149}
+.dev .nm{flex:1;min-width:0}.dev .nm b{display:block;font-size:17px}
+.dev .nm i{font-style:normal;color:#8b949e;font-size:13px}
+.dev .x{background:none;border:0;color:#8b949e;font-size:20px;padding:6px 10px}
+.hint{padding:14px;color:#8b949e;font-size:13px;text-align:center}
+#add{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9;display:none;align-items:center;justify-content:center;padding:20px}
+#add .box{background:#161b22;border-radius:18px;padding:18px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px}
+#add input{font-size:17px;padding:12px;background:#0d1117;color:#fff;border:1px solid #30363d;border-radius:12px}
+#err{color:#f85149;font-size:14px;min-height:18px}
+</style></head><body>
+
+<div id="devs" class="screen">
+  <header><span class="ttl" style="font-size:18px;color:#e6edf3">Мої ПК</span><button class="hb" onclick="openAdd()">＋ Додати</button></header>
+  <div id="devlist"></div>
+  <div class="hint">Тапни ПК, щоб підключитись. Новий ПК додається один раз: адреса з вікна PC Remote на ПК та PIN.</div>
+</div>
+
+<div id="app" class="screen" style="display:none">
+<header><button class="hb" onclick="goDevices()">‹ ПК</button><span class="ttl" id="host">PC Remote</span><span id="st">●</span></header>
+<main>
+ <section class="tab on" id="t0"><div class="row" style="flex:1;min-height:0"><div id="pad"></div><div id="scroll"></div></div>
+  <div class="row"><button class="b" onclick="c({t:'click'})">ЛКМ</button><button class="b" id="lockbtn" onclick="toggleLock()">✋ Тягти</button><button class="b" onclick="c({t:'rclick'})">ПКМ</button></div></section>
+ <section class="tab" id="t1">
+  <div class="row"><button class="b" onclick="k('prev')">⏮</button><button class="b" onclick="k('playpause')">⏯</button><button class="b" onclick="k('next')">⏭</button></div>
+  <div class="row"><button class="b" onclick="k('voldown')">🔉 −</button><button class="b" onclick="k('mute')">🔇</button><button class="b" onclick="k('volup')">🔊 +</button></div>
+  <div class="row"><button class="b" onclick="k('stop')">⏹</button></div></section>
+ <section class="tab" id="t2"><textarea id="txt" placeholder="Пиши тут — текст одразу летить на ПК" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+  <div class="row"><button class="b" onclick="k('backspace')">⌫</button><button class="b" onclick="k('enter')">⏎</button><button class="b" onclick="k('tab')">⇥</button><button class="b" onclick="k('esc')">Esc</button></div>
+  <div class="row"><button class="b" onclick="k('left')">←</button><button class="b" onclick="k('up')">↑</button><button class="b" onclick="k('down')">↓</button><button class="b" onclick="k('right')">→</button></div></section>
+ <section class="tab" id="t3"><div id="wins"></div></section>
+ <section class="tab" id="t4">
+  <div class="row"><button class="b sm" onclick="k('j')">⏪ 10с</button><button class="b sm" onclick="k('k')">⏯</button><button class="b sm" onclick="k('l')">10с ⏩</button></div>
+  <div class="row"><button class="b sm" onclick="k('left')">◀ 5с</button><button class="b sm" onclick="k('right')">5с ▶</button></div>
+  <div class="row"><button class="b sm" onclick="k('f')">⛶ Повний екран</button><button class="b sm" onclick="k('c')">CC Субтитри</button></div>
+  <div class="row"><button class="b sm" onclick="k('t')">▭ Театр</button><button class="b sm" onclick="k('m')">🔇 Mute</button><button class="b sm" onclick="k('esc')">Esc</button></div>
+  <div class="row"><button class="b sm" onclick="c({t:'combo',k:'speeddown'})">🐢 Повільніше</button><button class="b sm" onclick="c({t:'combo',k:'speedup'})">🐇 Швидше</button></div>
+  <div class="row"><button class="b sm" onclick="c({t:'combo',k:'prevvid'})">⏮ Попереднє</button><button class="b sm" onclick="c({t:'combo',k:'nextvid'})">Наступне ⏭</button></div>
+  <div class="row"><button class="b sm" onclick="k('volup')">🔊 +</button><button class="b sm" onclick="k('voldown')">🔉 −</button></div>
+  <div style="color:#8b949e;font-size:12px;text-align:center">Кнопки діють на активне вікно: спочатку обери браузер у «Вікна»</div></section>
+</main>
+<nav id="nav"><button class="on"><span>🖱</span>Миша</button><button><span>▶️</span>Медіа</button><button><span>⌨️</span>Текст</button><button><span>🪟</span>Вікна</button><button><span>🎬</span>Відео</button></nav>
+</div>
+
+<div id="add"><div class="box">
+  <div style="font-size:18px">Додати ПК</div>
+  <input id="a_name" placeholder="Назва (необов'язково)">
+  <input id="a_host" placeholder="Адреса, напр. DESKTOP-ABC.local" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <input id="a_pin" placeholder="PIN" type="tel" inputmode="numeric" autocomplete="off">
+  <div id="err"></div>
+  <div class="row"><button class="b sm" onclick="closeAdd()">Скасувати</button><button class="b sm" onclick="saveAdd()">Додати</button></div>
+</div></div>
+
+<script>
+// ---------- пристрої ----------
+const $=id=>document.getElementById(id);
+let devices=JSON.parse(localStorage.getItem('devices')||'[]');
+const saveDevs=()=>localStorage.setItem('devices',JSON.stringify(devices));
+if(!devices.length&&localStorage.getItem('pin')&&location.host){   // міграція зі старої версії
+  devices.push({name:'',host:location.host,pin:localStorage.getItem('pin')});saveDevs();
+}
+const normHost=h=>{h=h.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'');return h.includes(':')?h:h+':8765'};
+let cur=null,base='',pin='';
+
+async function probe(d){
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),2000);
+  try{
+    const r=await fetch('http://'+d.host+'/api/auth',{headers:{'X-Token':d.pin},signal:ctl.signal});
+    const j=await r.json();clearTimeout(to);
+    return {state:j.ok?'on':'pin',name:j.host};
+  }catch(e){clearTimeout(to);return {state:'off'}}
+}
+const STATE_TXT={on:'у мережі',pin:'невірний PIN',off:'не в мережі'};
+function renderDevices(){
+  const box=$('devlist');box.innerHTML='';
+  devices.forEach((d,i)=>{
+    const el=document.createElement('div');el.className='dev';
+    el.innerHTML='<span class="dot"></span><div class="nm"><b></b><i></i></div><button class="x">✕</button>';
+    el.querySelector('b').textContent=d.name||d.host;
+    el.querySelector('i').textContent=d.host.replace(':8765','');
+    el.querySelector('.nm').onclick=()=>connect(d);
+    el.querySelector('.x').onclick=ev=>{ev.stopPropagation();
+      if(confirm('Видалити «'+(d.name||d.host)+'» зі списку?')){devices.splice(i,1);saveDevs();renderDevices()}};
+    el.dataset.i=i;box.appendChild(el);
+  });
+  refreshStatus();
+}
+async function refreshStatus(){
+  const els=[...document.querySelectorAll('#devlist .dev')];
+  await Promise.all(els.map(async el=>{
+    const d=devices[el.dataset.i];if(!d||el.dataset.state==='pin')return;  // з неправильним PIN не опитуємо повторно
+    const r=await probe(d);el.dataset.state=r.state;
+    const dot=el.querySelector('.dot');dot.className='dot '+r.state;
+    el.querySelector('i').textContent=d.host.replace(':8765','')+' · '+STATE_TXT[r.state];
+    if(r.name&&!d.name){d.name=r.name;saveDevs();el.querySelector('b').textContent=r.name}
+  }));
+}
+setInterval(()=>{if($('devs').style.display!=='none'&&!document.hidden&&$('add').style.display!=='flex')refreshStatus()},5000);
+
+function openAdd(prefill){
+  $('a_name').value='';$('a_pin').value='';$('err').textContent='';
+  $('a_host').value=prefill||'';$('add').style.display='flex';
+}
+function closeAdd(){$('add').style.display='none'}
+async function saveAdd(){
+  const host=normHost($('a_host').value),p=$('a_pin').value.trim();
+  if(!$('a_host').value.trim()||!p){$('err').textContent='Введи адресу та PIN';return}
+  const r=await probe({host,pin:p});
+  if(r.state==='off'){$('err').textContent='Немає зв\'язку з цим ПК';return}
+  if(r.state==='pin'){$('err').textContent='Невірний PIN';return}
+  const nm=$('a_name').value.trim()||r.name||host;
+  const ex=devices.find(d=>d.host===host);
+  if(ex){ex.pin=p;ex.name=nm}else devices.push({name:nm,host,pin:p});
+  saveDevs();closeAdd();renderDevices();
+}
+
+// ---------- підключення ----------
+let ws=null,wantWS=false;
+const H=()=>({'X-Token':pin,'Content-Type':'application/json'});
+const st=ok=>$('st').style.color=ok?'#3fb950':'#f85149';
+function closeWS(){if(ws){ws.onclose=null;ws.onerror=null;try{ws.close()}catch(e){}ws=null}st(false)}
+function connectWS(){
+  if(!wantWS||!cur||document.hidden)return;
+  if(ws&&ws.readyState<=1)return;
+  const w=new WebSocket('ws://'+cur.host+'/ws?t='+encodeURIComponent(pin));
+  ws=w;
+  w.onopen=()=>st(true);
+  w.onclose=()=>{st(false);ws=null;setTimeout(connectWS,1000)};
+  w.onerror=()=>{try{w.close()}catch(e){}};
+}
+const c=o=>{
+  if(ws&&ws.readyState===1){ws.send(JSON.stringify(o));return Promise.resolve({ok:true})}
+  return fetch(base+'/api/cmd',{method:'POST',headers:H(),body:JSON.stringify(o)}).then(r=>{st(r.ok);return r}).catch(()=>st(false));
+};
+const k=x=>{c({t:'key',k:x});navigator.vibrate&&navigator.vibrate(10)};
+function connect(d){
+  cur=d;base='http://'+d.host;pin=d.pin;wantWS=true;
+  $('host').textContent=d.name||d.host;
+  $('devs').style.display='none';$('app').style.display='flex';
+  showTab(0);connectWS();
+}
+function goDevices(){
+  releaseDrag();wantWS=false;closeWS();cur=null;
+  $('app').style.display='none';$('devs').style.display='flex';renderDevices();
+}
+// розрив зв'язку при блокуванні/згортанні — економимо батарею
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){releaseDrag();closeWS()}
+  else if(cur&&wantWS){connectWS();if($('t3').classList.contains('on'))loadWins()}
+  else refreshStatus();
+});
+window.addEventListener('pagehide',closeWS);
+
+// ---------- вкладки ----------
+const navb=[...document.querySelectorAll('nav button')];
+function showTab(i){
+  navb.forEach((x,j)=>x.classList.toggle('on',i==j));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',i==j));
+  if(i==3)loadWins();
+}
+navb.forEach((b,i)=>b.onclick=()=>{showTab(i);if(i==2)$('txt').focus()});
+
+// ---------- тачпад: раз на кадр, дробові залишки, прискорення ----------
+function pad(el,onMove,hooks){
+  hooks=hooks||{};
+  let lx,ly,ax=0,ay=0,t0,moved,fing=0,raf=0;
+  const flush=()=>{raf=0;if(ax||ay){const x=ax,y=ay;ax=ay=0;onMove(x,y)}};
+  el.addEventListener('touchstart',e=>{const t=e.touches[0];lx=t.clientX;ly=t.clientY;t0=Date.now();moved=0;fing=e.touches.length;
+    hooks.start&&hooks.start(fing)});
+  el.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];
+    const dx=t.clientX-lx,dy=t.clientY-ly;lx=t.clientX;ly=t.clientY;
+    ax+=dx;ay+=dy;moved+=Math.abs(dx)+Math.abs(dy);
+    if(!raf)raf=requestAnimationFrame(flush)},{passive:false});
+  el.addEventListener('touchend',()=>{flush();hooks.end&&hooks.end(moved<8&&Date.now()-t0<250,fing)});
+}
+let rx=0,ry=0,lastTap=0,dragging=false,locked=false;
+// Перетягування: 1) тап і одразу ж торкнутись знову та вести (як на тачпаді ноутбука);
+// 2) кнопка «Тягти» затискає ЛКМ до повторного натискання (зручно через два монітори)
+pad($('pad'),(x,y)=>{
+  const g=1.4+Math.min(Math.hypot(x,y)/12,1.6);
+  const vx=x*g+rx,vy=y*g+ry,ix=Math.trunc(vx),iy=Math.trunc(vy);
+  rx=vx-ix;ry=vy-iy;
+  if(ix||iy)c({t:'move',dx:ix,dy:iy});
+},{
+  start:f=>{if(!locked&&f===1&&Date.now()-lastTap<300){dragging=true;c({t:'down'});navigator.vibrate&&navigator.vibrate(15)}},
+  end:(tap,f)=>{
+    if(dragging){c({t:'up'});dragging=false;lastTap=0;return}
+    if(locked)return;
+    if(tap){c({t:f>1?'rclick':'click'});lastTap=f===1?Date.now():0}else lastTap=0;
+  }
+});
+function setLock(v){locked=v;$('lockbtn').classList.toggle('lock',v);$('lockbtn').textContent=v?'✋ Відпустити':'✋ Тягти';c({t:v?'down':'up'})}
+function toggleLock(){setLock(!locked);navigator.vibrate&&navigator.vibrate(15)}
+function releaseDrag(){if(locked)setLock(false);if(dragging){c({t:'up'});dragging=false}}
+let sy=0;
+pad($('scroll'),(x,y)=>{const v=y*3+sy,i=Math.trunc(v);sy=v-i;if(i)c({t:'scroll',dy:i})});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ---------- текст ----------
+const tx=$('txt');
+tx.addEventListener('beforeinput',e=>{
+  if(e.isComposing)return;
+  if(e.inputType==='deleteContentBackward')k('backspace');
+  else if(e.inputType==='insertLineBreak'||e.inputType==='insertParagraph'){e.preventDefault();k('enter')}
+});
+tx.addEventListener('input',e=>{
+  if(e.inputType==='insertCompositionText')return;
+  if((e.inputType==='insertText'||e.inputType==='insertFromPaste'||e.inputType==='insertFromComposition')&&e.data)c({t:'text',s:e.data});
+  if(tx.value.length>200)tx.value='';
+});
+tx.addEventListener('compositionend',e=>{if(e.data)c({t:'text',s:e.data})});
+
+// ---------- вікна ----------
+async function loadWins(){
+  if(!cur||document.hidden)return;
+  let r;try{r=await fetch(base+'/api/windows',{headers:H()})}catch(e){return}
+  if(!r.ok)return;
+  const list=await r.json();const box=$('wins');box.innerHTML='';
+  list.forEach(w=>{const d=document.createElement('div');d.className='w'+(w.active?' act':'');
+    d.innerHTML='<img alt=""><div class="t"><b></b><i></i></div><button>✕</button>';
+    const im=d.querySelector('img');
+    im.onerror=()=>{im.className='ph';im.removeAttribute('src')};
+    im.src=base+'/api/icon?app='+encodeURIComponent(w.app)+'&t='+encodeURIComponent(pin);
+    d.querySelector('b').textContent=w.title;d.querySelector('i').textContent=w.app;
+    d.querySelector('.t').onclick=async()=>{await c({t:'focus',id:w.id});setTimeout(loadWins,300)};
+    d.querySelector('button').onclick=async()=>{await c({t:'close',id:w.id});setTimeout(loadWins,500)};
+    box.appendChild(d)});
+}
+setInterval(()=>{if($('t3').classList.contains('on'))loadWins()},3000);
+
+// ---------- старт ----------
+renderDevices();
+if(!devices.length)openAdd(location.host.replace(':8765',''));
+</script></body></html>

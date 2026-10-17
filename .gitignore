@@ -1,0 +1,13 @@
+# PIN-код і локальні налаштування, НЕ публікувати
+config.json
+
+# Збірка
+build/
+dist/
+*.spec
+PCRemote.exe
+
+# Python
+__pycache__/
+*.pyc
+.venv/

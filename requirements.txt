@@ -1,0 +1,4 @@
+aiohttp>=3.9
+zeroconf>=0.130
+Pillow>=10
+pystray>=0.19
